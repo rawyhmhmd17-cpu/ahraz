@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>منظومة كشوفات الأحراز - النقيب / إسلام أيمن</title>
+  
+  <!-- PWA & Mobile Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="منظومة الأحراز">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#0a192f">
+
+  <script>
+
+window.INITIAL_DATA = [];
+window.ITEMS_BY_ID = {};
+
+</script>
+  <!-- In-browser QR Scanner (Uses device camera directly without internet) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <!-- In-browser Canvas capture for saving images -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- QR Code Generator -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --navy-dark: #0a192f;
+      --navy: #112d4e;
+      --navy-light: #1b4965;
+      --blue-accent: #2563eb;
+      --gold: #d4af37;
+      --gold-light: #fef08a;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 12px;
+      --shadow: 0 4px 14px rgba(10, 25, 47, 0.06);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 75px; }
+
+    /* Login Screen */
+    #loginScreen {
+      position: fixed; inset: 0; background: radial-gradient(circle at center, #1b4965 0%, #0a192f 100%);
+      display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+    }
+    .login-box {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(212, 175, 55, 0.4);
+      backdrop-filter: blur(15px);
+      padding: 35px 25px;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      color: #fff;
+      box-shadow: 0 10px 35px rgba(0,0,0,0.5);
+    }
+    .badge-eagle { font-size: 55px; margin-bottom: 10px; }
+    .title-gov { font-size: 13px; color: #cbd5e1; margin-bottom: 4px; }
+    .officer-name { font-size: 22px; font-weight: bold; color: var(--gold); margin-bottom: 4px; }
+    .officer-role { font-size: 14px; color: #e2e8f0; margin-bottom: 25px; }
+    .input-pass {
+      width: 100%; padding: 14px 16px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.1); color: #fff; font-size: 20px; text-align: center; outline: none;
+      letter-spacing: 4px; margin-bottom: 18px;
+    }
+    .input-pass:focus { border-color: var(--gold); background: rgba(255,255,255,0.15); }
+    .btn-login {
+      width: 100%; padding: 14px; background: linear-gradient(135deg, #d4af37, #b8911b);
+      border: none; border-radius: 12px; color: #0a192f; font-weight: bold; font-size: 17px;
+      cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(212,175,55,0.3);
+    }
+    .btn-login:hover { transform: translateY(-2px); }
+    .error-msg { color: #f87171; font-size: 13px; margin-top: 12px; min-height: 18px; }
+
+    /* Top App Bar */
+    .app-header {
+      background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 100%);
+      color: #fff; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 2px solid var(--gold); position: sticky; top: 0; z-index: 100;
+    }
+    .header-details h1 { font-size: 16px; color: var(--gold-light); font-weight: bold; }
+    .header-details p { font-size: 11px; color: #cbd5e1; }
+    .btn-logout { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 8px; padding: 6px 14px; font-size: 12px; cursor: pointer; }
+
+    .container { max-width: 950px; margin: 0 auto; padding: 16px; }
+
+    /* Fast Action Camera Button */
+    .btn-scan-camera {
+      width: 100%; background: linear-gradient(135deg, #1e3a8a, #0284c7);
+      color: #fff; border: 1.5px solid #38bdf8; padding: 14px 20px; border-radius: var(--radius);
+      font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; gap: 10px; margin-bottom: 14px; box-shadow: 0 4px 15px rgba(2,132,199,0.25);
+      transition: all 0.2s;
+    }
+    .btn-scan-camera:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(2,132,199,0.35); }
+
+    /* Direct Item Banner */
+    .direct-item-banner {
+      background: #eff6ff; border: 1.5px solid var(--blue-accent); border-radius: var(--radius);
+      padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .btn-show-all {
+      background: var(--navy-dark); color: #fff; border: none; padding: 6px 14px;
+      border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;
+    }
+
+    /* Navigation tabs */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; background: var(--card-bg);
+      display: flex; border-top: 1px solid var(--border); height: 65px; z-index: 200;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+    .nav-btn {
+      flex: 1; border: none; background: none; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; font-size: 11px; font-weight: bold;
+      color: var(--text-muted); cursor: pointer; transition: 0.2s;
+    }
+    .nav-btn.active { color: var(--blue-accent); }
+    .nav-btn span { font-size: 19px; margin-bottom: 2px; }
+
+    /* Content Views */
+    .view-content { display: none; }
+    .view-content.active { display: block; }
+
+    /* Search Controls */
+    .search-bar-wrap { position: sticky; top: 70px; z-index: 90; margin-bottom: 12px; }
+    .search-bar {
+      width: 100%; padding: 15px 18px 15px 45px; border-radius: var(--radius);
+      border: 2px solid var(--navy-light); outline: none; font-size: 15px;
+      box-shadow: var(--shadow); background: #fff;
+    }
+    .search-bar:focus { border-color: var(--blue-accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+    .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--navy-light); }
+    
+    .actions-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 14px; gap: 10px; flex-wrap: wrap;
+    }
+    .search-summary { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+    .btn-print {
+      background: var(--navy-dark); color: #fff; border: 1px solid var(--gold);
+      border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: bold;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+      transition: 0.2s;
+    }
+    .btn-print:hover { background: var(--navy-light); }
+
+    /* Record Cards */
+    .record-card {
+      background: var(--card-bg); border-radius: var(--radius); padding: 18px;
+      margin-bottom: 14px; box-shadow: var(--shadow); border: 1px solid var(--border);
+      position: relative;
+    }
+    .record-header {
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1.5px solid #f1f5f9; padding-bottom: 10px; margin-bottom: 12px;
+      flex-wrap: wrap; gap: 8px;
+    }
+    .file-badge { background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+    .case-badge { background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; }
+    .hzr-code-badge { background: #f3e8ff; color: #6b21a8; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; font-family: monospace; }
+    
+    .record-body { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .field-row { display: flex; flex-direction: column; }
+    .field-title { font-size: 12px; color: var(--text-muted); margin-bottom: 3px; font-weight: bold; }
+    .field-val { font-size: 14px; color: var(--text); line-height: 1.6; }
+    .field-val.desc { background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #f1f5f9; font-weight: 500; }
+    .highlight { background: #fef08a; padding: 1px 4px; border-radius: 3px; font-weight: bold; color: #000; }
+
+    .card-actions {
+      display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;
+      padding-top: 10px; border-top: 1px solid #f1f5f9; flex-wrap: wrap;
+    }
+    .btn-card-action {
+      border: 1px solid var(--border); background: #f8fafc; color: var(--navy-dark);
+      padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: bold;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s;
+    }
+    .btn-card-action:hover { background: #e2e8f0; }
+
+    /* In-App Camera Scanner Modal */
+    .scanner-modal {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(6px);
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 600; padding: 16px;
+    }
+    .scanner-box {
+      background: #fff; border-radius: var(--radius); width: 100%; max-width: 440px;
+      overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .scanner-head {
+      background: var(--navy-dark); color: #fff; padding: 14px 18px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    #cameraReader { width: 100%; min-height: 280px; background: #000; }
+
+    /* Single Item QR Modal */
+    .item-qr-modal {
+      position: fixed; inset: 0; background: rgba(10, 25, 47, 0.7); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center; z-index: 500; padding: 16px;
+    }
+    .item-qr-box {
+      background: #fff; border-radius: var(--radius); width: 100%; max-width: 440px;
+      padding: 24px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .tag-preview {
+      border: 2px dashed #0a192f; border-radius: 10px; padding: 16px;
+      margin: 15px auto; background: #fff; max-width: 340px; text-align: center;
+    }
+
+    /* PWA Install Banner */
+    .install-pwa-bar {
+      background: #fef3c7; border: 1.5px solid #d97706; border-radius: var(--radius);
+      padding: 12px 16px; margin-bottom: 16px; display: none; align-items: center;
+      justify-content: space-between; gap: 10px;
+    }
+    .btn-install {
+      background: #d97706; color: #fff; border: none; padding: 8px 14px;
+      border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; white-space: nowrap;
+    }
+
+    /* Files Management */
+    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 18px; }
+    .stat-card {
+      background: var(--card-bg); padding: 16px; border-radius: var(--radius);
+      box-shadow: var(--shadow); border-right: 4px solid var(--blue-accent);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .stat-val { font-size: 22px; font-weight: bold; color: var(--navy-dark); }
+    .stat-lbl { font-size: 12px; color: var(--text-muted); }
+
+    .file-item {
+      background: #fff; border-radius: var(--radius); padding: 14px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px; box-shadow: var(--shadow); border: 1px solid var(--border);
+    }
+    .file-title { font-weight: bold; font-size: 14px; color: var(--navy-dark); }
+    .file-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    .btn-act {
+      border: none; border-radius: 8px; padding: 7px 12px; font-size: 12px;
+      cursor: pointer; font-weight: bold; transition: 0.2s;
+    }
+
+    /* Table Modal */
+    .modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center; z-index: 300; padding: 12px;
+    }
+    .modal-content {
+      background: #fff; border-radius: var(--radius); width: 100%; max-width: 950px;
+      max-height: 88vh; display: flex; flex-direction: column; overflow: hidden;
+    }
+    .modal-head {
+      background: var(--navy-dark); color: #fff; padding: 14px 18px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-body { padding: 16px; overflow-y: auto; }
+    
+    .styled-table {
+      width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px;
+      border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; margin-top: 10px;
+    }
+    .styled-table th {
+      background: var(--navy); color: #fff; padding: 12px 14px; text-align: right;
+      font-weight: 600; font-size: 13px; border-bottom: 2px solid var(--gold); white-space: nowrap;
+    }
+    .styled-table td {
+      padding: 12px 14px; border-bottom: 1px solid #e2e8f0; line-height: 1.5; vertical-align: top;
+    }
+    .styled-table tr:nth-child(even) { background: #f8fafc; }
+
+    /* Admin Modal */
+    .admin-modal {
+      position: fixed; inset: 0; background: rgba(10, 25, 47, 0.75); backdrop-filter: blur(5px);
+      display: none; align-items: center; justify-content: center; z-index: 400; padding: 20px;
+    }
+    .admin-box {
+      background: #fff; border-radius: var(--radius); padding: 28px 24px; width: 100%; max-width: 380px;
+      text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border-top: 4px solid var(--gold);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      background: var(--navy-dark); color: #fff; padding: 12px 24px; border-radius: 30px;
+      font-size: 13px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 2000;
+      opacity: 0; transition: 0.3s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 10px); }
+
+    /* PRINT STYLES */
+    @media print {
+      body { background: #fff; color: #000; padding-bottom: 0; }
+      #loginScreen, .app-header, .bottom-nav, .search-bar-wrap, .actions-bar, .upload-box, .btn-act, #viewQR, #viewSettings, #viewFiles, .card-actions, .direct-item-banner, .btn-scan-camera, .install-pwa-bar { display: none !important; }
+      #viewSearch { display: block !important; }
+      .container { max-width: 100%; padding: 0; }
+      
+      .print-header {
+        display: block !important; text-align: center; margin-bottom: 25px;
+        border-bottom: 2px solid #000; padding-bottom: 12px;
+      }
+      .print-header h2 { font-size: 18px; margin-bottom: 4px; }
+      .print-header h3 { font-size: 15px; font-weight: normal; margin-bottom: 4px; }
+      .print-header p { font-size: 13px; }
+
+      .record-card {
+        box-shadow: none !important; border: 1.5px solid #000 !important;
+        page-break-inside: avoid; margin-bottom: 15px; padding: 14px;
+      }
+      .file-badge, .case-badge, .hzr-code-badge { border: 1px solid #000 !important; color: #000 !important; background: transparent !important; }
+      .highlight { background: transparent !important; text-decoration: underline; font-weight: bold; }
+    }
+    .print-header { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Screen: Login -->
+  <div id="loginScreen">
+    <div class="login-box">
+      <div class="badge-eagle">🦅</div>
+      <div class="title-gov">وزارة الداخلية - مديرية أمن الجيزة</div>
+      <div class="officer-name">النقيب / إسلام أيمن</div>
+      <div class="officer-role">معاون ضبط مركز شرطة منشأة القناطر</div>
+
+      <div id="loginScannedHint" style="display:none; font-size:12px; color:#fde047; margin-bottom:12px; font-weight:bold;">
+        🔍 تم مسح باركود حرز محدد - أدخل كلمة السر لعرض تفاصيله مباشرة
+      </div>
+
+      <input type="password" id="passInput" class="input-pass" placeholder="••••" autocomplete="off">
+      <button class="btn-login" onclick="login()">دخول المنظومة</button>
+      <div id="loginError" class="error-msg"></div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-details">
+      <h1>النقيب / إسلام أيمن</h1>
+      <p>معاون ضبط مركز منشأة القناطر | تطبيق الأحراز المباشر</p>
+    </div>
+    <button class="btn-logout" onclick="logout()">خروج 🚪</button>
+  </header>
+
+  <!-- Print Official Header -->
+  <div class="print-header">
+    <h2>وزارة الداخلية - مديرية أمن الجيزة</h2>
+    <h3>مركز شرطة منشأة القناطر - مكتب معاون الضبط</h3>
+    <p><strong>كشف حصر وبحث الأحراز | إشراف: النقيب / إسلام أيمن</strong></p>
+    <p id="printDate" style="font-size: 11px; margin-top: 4px;"></p>
+  </div>
+
+  <div class="container">
+    
+    <!-- PWA Install Banner -->
+    <div id="pwaInstallBanner" class="install-pwa-bar">
+      <div>
+        <strong style="color:#92400e; font-size:13px;">📲 تثبيت المنظومة كتطبيق دائم</strong>
+        <div style="font-size:11px; color:#b45309;">لتشغيل المنظومة أوفلاين بدون نت وبدون سيرفر</div>
+      </div>
+      <button class="btn-install" id="btnInstallPwa">تثبيت الآن</button>
+    </div>
+
+    <!-- View: Search -->
+    <section id="viewSearch" class="view-content active">
+      
+      <!-- Built-in Camera Scanner Button -->
+      <button class="btn-scan-camera" onclick="openCameraScanner()">
+        <span style="font-size: 22px;">📷</span> فتح كاميرا التطبيق لمسح باركود الحرز
+      </button>
+
+      <!-- Direct Item Scanned Alert -->
+      <div id="directItemBanner" class="direct-item-banner" style="display:none;">
+        <div>
+          <strong style="color:var(--navy-dark); font-size:14px;">🎯 معروض الحرز الممسوح بالباركود فقط</strong>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">تم الانتقال للحرز مباشرة بالمسح الضوئي</div>
+        </div>
+        <button class="btn-show-all" onclick="clearDirectView()">عرض كل الكشوفات 🔍</button>
+      </div>
+
+      <div class="search-bar-wrap">
+        <input type="text" id="searchInput" class="search-bar" placeholder="ابحث برقم القضية، السلاح، المخدر، رقم المخزن، السنة..." oninput="handleSearch()">
+        <span class="search-icon">🔍</span>
+      </div>
+
+      <div class="actions-bar">
+        <div id="searchSummary" class="search-summary">اكتب كلمة البحث للبدء أو امسح الباركود بالكاميرا</div>
+        <button id="btnPrintResults" class="btn-print" onclick="printResults()" style="display: none;">
+          🖨️ طباعة النتيجة الحالية
+        </button>
+      </div>
+
+      <div id="searchResults"></div>
+    </section>
+
+    <!-- View: Files -->
+    <section id="viewFiles" class="view-content">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div>
+            <div class="stat-lbl">إجمالي الكشوفات</div>
+            <div id="statFilesCount" class="stat-val">0</div>
+          </div>
+          <span style="font-size: 30px;">📁</span>
+        </div>
+        <div class="stat-card">
+          <div>
+            <div class="stat-lbl">إجمالي الأحراز المسجلة</div>
+            <div id="statRowsCount" class="stat-val">0</div>
+          </div>
+          <span style="font-size: 30px;">⚖️</span>
+        </div>
+      </div>
+
+      <div class="upload-box" onclick="document.getElementById('dataImportInput').click()">
+        <span style="font-size: 34px; display: block; margin-bottom: 6px;">📥</span>
+        <div style="font-weight: bold; color: var(--navy-light); font-size: 15px;">استيراد ملف البيانات (ahraz-data.json)</div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">يتم التخزين على هذا الجهاز فقط ولا يُرفع لأي مكان</div>
+        <input type="file" id="dataImportInput" accept=".json,application/json" style="display:none;" onchange="importDataFile(this.files[0]); this.value='';">
+      </div>
+      <div style="text-align:center; margin-bottom:14px;"><a href="#" onclick="clearImportedData(); return false;" style="font-size:12px; color:#b91c1c;">مسح البيانات من الجهاز</a></div>
+
+      <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--navy-dark);">الكشوفات المحملة بالمنظومة:</h3>
+      <div id="filesContainer"></div>
+    </section>
+
+    <!-- View: QR Code System Wide -->
+    <section id="viewQR" class="view-content">
+      <div style="background:#fff; padding:30px 20px; border-radius:var(--radius); text-align:center; box-shadow:var(--shadow); border:1px solid var(--border);">
+        <div style="font-size: 18px; font-weight: bold; color: var(--navy-dark);">تطبيق وباركود المنظومة</div>
+        <div style="font-size: 13px; color: var(--text-muted); margin: 6px 0 12px;">امسح الكود لفتح أو تثبيت التطبيق على أي هاتف آيفون أو أندرويد</div>
+        <div id="qrcodeDisplay" style="display:inline-block; margin:15px auto; padding:10px; background:#fff; border-radius:12px; border:1.5px solid var(--border);"></div>
+        <div>
+          <div id="qrUrlText" style="direction:ltr; font-weight:bold; color:var(--blue-accent); background:#f1f5f9; padding:10px 14px; border-radius:8px; display:inline-block; margin:8px 0; word-break:break-all;"></div>
+        </div>
+        <br>
+        <button class="btn-login" style="max-width: 200px; margin: 10px auto 0; padding: 10px; font-size: 14px;" onclick="copyPageUrl()">نسخ الرابط 📋</button>
+      </div>
+    </section>
+
+    <!-- View: Settings -->
+    <section id="viewSettings" class="view-content">
+      <div class="record-card" style="padding: 24px;">
+        <h3 style="margin-bottom: 16px; color: var(--navy-dark);">🔐 كلمة سر الدخول للمنظومة</h3>
+        <div class="field-row" style="margin-bottom: 12px;">
+          <label class="field-title">كلمة السر الحالية</label>
+          <input type="password" id="cfgOldPass" class="search-bar" style="padding: 10px;">
+        </div>
+        <div class="field-row" style="margin-bottom: 16px;">
+          <label class="field-title">كلمة السر الجديدة</label>
+          <input type="password" id="cfgNewPass" class="search-bar" style="padding: 10px;">
+        </div>
+        <button class="btn-login" style="padding: 12px; font-size: 15px;" onclick="saveNewPassword()">تحديث كلمة السر</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- In-App Camera Scanner Modal -->
+  
+  <!-- Modal View Table -->
+  <div id="tableModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-head">
+        <div id="modalTitle" style="font-weight: bold; font-size: 14px;">عرض الكشف</div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-print" style="padding: 5px 12px; font-size: 12px;" onclick="window.print()">🖨️ طباعة</button>
+          <button style="background:none; border:none; color:#fff; font-size:20px; cursor:pointer;" onclick="closeModal()">✕</button>
+        </div>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+    </div>
+  </div>
+
+  <div id="scannerModal" class="scanner-modal">
+    <div class="scanner-box">
+      <div class="scanner-head">
+        <div style="font-weight: bold; font-size: 15px;">📷 ماسح باركود الأحراز</div>
+        <button style="background:none; border:none; color:#fff; font-size:22px; cursor:pointer;" onclick="closeCameraScanner()">✕</button>
+      </div>
+      <div id="cameraReader"></div>
+      <div style="padding: 12px; text-align: center; font-size: 13px; color: var(--text-muted);">
+        وجه الكاميرا نحو باركود الحرز للتعرف التلقائي الفوري
+      </div>
+    </div>
+  </div>
+
+  <!-- Single Item Tag Modal -->
+  <div id="itemQrModal" class="item-qr-modal">
+    <div class="item-qr-box">
+      <h3 style="font-size: 16px; color: var(--navy-dark); margin-bottom: 4px;">🏷️ باركود الحرز</h3>
+      <div id="printableTag" class="tag-preview">
+        <div style="font-size:12px; font-weight:bold; color:var(--navy-dark);">مركز شرطة منشأة القناطر</div>
+        <div id="modalTagCase" style="font-size:14px; font-weight:bold; color:#b91c1c; margin:6px 0;">قضية: </div>
+        <div id="modalTagStore" style="font-size:12px; font-weight:bold; margin-bottom:8px;">مخزن: </div>
+        <div id="modalTagQr" style="display:flex; justify-content:center; margin:8px 0;"></div>
+        <div id="modalTagCode" style="font-size:13px; font-family:monospace; font-weight:bold; color:var(--blue-accent);">HZR-0000</div>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <button class="btn-act" style="flex:1; background:#e2e8f0; color:#475569; padding:10px 16px;" onclick="closeItemQrModal()">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="switchNav('Search', this)">
+      <span>🔍</span> بحث الأحراز
+    </button>
+    <button class="nav-btn" onclick="switchNav('Files', this)">
+      <span>📂</span> الكشوفات
+    </button>
+    <button class="nav-btn" onclick="switchNav('QR', this)">
+      <span>📱</span> التطبيق والباركود
+    </button>
+    <button class="nav-btn" onclick="switchNav('Settings', this)">
+      <span>⚙️</span> الإعدادات
+    </button>
+  </nav>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // Service Worker Registration for 100% Offline App
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('PWA ServiceWorker ready:', reg.scope))
+          .catch(err => console.log('SW register failed:', err));
+      });
+    }
+
+    // PWA Install prompt handling
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('pwaInstallBanner').style.display = 'flex';
+    });
+
+    document.getElementById('btnInstallPwa').addEventListener('click', () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(choiceResult => {
+          if (choiceResult.outcome === 'accepted') {
+            document.getElementById('pwaInstallBanner').style.display = 'none';
+          }
+          deferredPrompt = null;
+        });
+      }
+    });
+
+    // Detect iOS and show instructions
+    const isIos = () => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+    const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
+    if (isIos() && !isInStandaloneMode()) {
+      document.getElementById('pwaInstallBanner').style.display = 'flex';
+      document.getElementById('pwaInstallBanner').innerHTML = `
+        <div style="font-size:12px; color:#92400e; line-height:1.5;">
+          🍏 <b>لتثبيت التطبيق على الآيفون:</b> اضغط على زر المشاركة <b>[ ⎋ ]</b> بأسفل سفاري واختر <b>"إضافة إلى الشاشة الرئيسية" (Add to Home Screen)</b>
+        </div>
+      `;
+    }
+
+    const ADMIN_PASSWORD = "fd4nUFlGW7MLON7";
+    let pendingAdminCallback = null;
+
+    function requestUploadAuth() {
+      openAdminModal(() => {
+        document.getElementById('fileUploadInput').click();
+      });
+    }
+
+    function requestDeleteAuth(index) {
+      openAdminModal(() => {
+        if (!confirm(`هل أنت متأكد من حذف كشف: "${filesData[index].name}"؟`)) return;
+        filesData.splice(index, 1);
+        localStorage.setItem('custom_files_data', JSON.stringify(filesData));
+        renderStats();
+        renderFilesList();
+        showToast('تم حذف الكشف بنجاح');
+      });
+    }
+
+    function openAdminModal(callback) {
+      pendingAdminCallback = callback;
+      document.getElementById('adminPassInput').value = '';
+      document.getElementById('adminModal').style.display = 'flex';
+      setTimeout(() => document.getElementById('adminPassInput').focus(), 100);
+    }
+
+    function closeAdminModal() {
+      document.getElementById('adminModal').style.display = 'none';
+      pendingAdminCallback = null;
+    }
+
+    function verifyAdminAction() {
+      const input = document.getElementById('adminPassInput').value;
+      if (input === ADMIN_PASSWORD) {
+        const cb = pendingAdminCallback;
+        closeAdminModal();
+        if (cb) cb();
+      } else {
+        alert('❌ كلمة سر الإدارة غير صحيحة! لا يمكنك التعديل أو الحذف.');
+      }
+    }
+
+    function handleLocalFileUpload(file) {
+      if (!file) return;
+      if (!file.name.endsWith('.docx')) {
+        alert('يرجى اختيار ملف Word بصيغة docx');
+        return;
+      }
+      showToast('جاري قراءة الملف وإدراجه في المنظومة...');
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        mammoth.convertToHtml({ arrayBuffer: e.target.result })
+          .then(result => {
+            const div = document.createElement('div');
+            div.innerHTML = result.value;
+            const tables = div.querySelectorAll('table');
+            const fileTables = [];
+            let totalRows = 0;
+
+            tables.forEach(table => {
+              const rows = Array.from(table.querySelectorAll('tr'));
+              if (rows.length === 0) return;
+              const headers = Array.from(rows[0].querySelectorAll('th, td')).map(c => c.innerText.trim());
+              const dataRows = rows.slice(1).map(r => Array.from(r.querySelectorAll('td')).map(c => c.innerText.trim()));
+              totalRows += dataRows.length;
+              fileTables.push({ h: headers, r: dataRows });
+            });
+
+            const newFileObj = {
+              name: file.name,
+              total: totalRows,
+              tables: fileTables
+            };
+
+            filesData.unshift(newFileObj);
+            localStorage.setItem('custom_files_data', JSON.stringify(filesData));
+            renderStats();
+            renderFilesList();
+            showToast(`تمت إضافة ${file.name} بنجاح (${totalRows} حرز)`);
+          })
+          .catch(() => showToast('خطأ أثناء قراءة الملف', true));
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    let filesData = [];
+    let itemsById = {};
+    let currentPassword = localStorage.getItem('system_pass') || '1234';
+    let searchTimer = null;
+    let targetItemId = null;
+    let html5QrScanner = null;
+
+    function checkTargetItem() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const itemParam = urlParams.get('item');
+      const hashParam = window.location.hash ? window.location.hash.substring(1) : null;
+      targetItemId = itemParam || (hashParam && hashParam.startsWith('HZR-') ? hashParam : null);
+      
+      if (targetItemId) {
+        document.getElementById('loginScannedHint').style.display = 'block';
+      }
+    }
+    checkTargetItem();
+
+    function initData() {
+      try {
+        const saved = localStorage.getItem('ahraz_data');
+        if (saved) {
+          const d = JSON.parse(saved);
+          filesData = d.files || [];
+          itemsById = d.items || {};
+          return;
+        }
+      } catch (e) {}
+      filesData = window.INITIAL_DATA || [];
+      itemsById = window.ITEMS_BY_ID || {};
+    }
+
+    function importDataFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const d = JSON.parse(e.target.result);
+          if (!d || d.app !== 'ahraz' || !Array.isArray(d.files) || !d.items) throw new Error('bad');
+          localStorage.setItem('ahraz_data', JSON.stringify({files: d.files, items: d.items}));
+          initData();
+          renderStats();
+          renderFilesList();
+          renderQRCode();
+          showToast('تم استيراد البيانات (' + Object.keys(itemsById).length + ' حرز)');
+        } catch (err) {
+          alert('ملف البيانات غير صالح أو تالف');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function clearImportedData() {
+      if (!confirm('مسح البيانات المخزنة على هذا الجهاز؟')) return;
+      localStorage.removeItem('ahraz_data');
+      initData();
+      renderStats();
+      renderFilesList();
+      showToast('تم مسح البيانات');
+    }
+
+    // Auth Login
+    function login() {
+      const input = document.getElementById('passInput').value;
+      if (input === currentPassword) {
+        document.getElementById('loginScreen').style.display = 'none';
+        initData();
+        renderStats();
+        renderFilesList();
+        renderQRCode();
+
+        if (targetItemId && itemsById[targetItemId]) {
+          showDirectItem(targetItemId);
+        } else {
+          document.getElementById('searchInput').focus();
+        }
+      } else {
+        document.getElementById('loginError').textContent = 'كلمة السر غير صحيحة';
+      }
+    }
+
+    document.getElementById('passInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') login();
+    });
+
+    function logout() {
+      document.getElementById('passInput').value = '';
+      document.getElementById('loginScreen').style.display = 'flex';
+    }
+
+    // Camera Barcode Scanner
+    function openCameraScanner() {
+      document.getElementById('scannerModal').style.display = 'flex';
+      html5QrScanner = new Html5Qrcode("cameraReader");
+      
+      const config = { fps: 15, qrbox: { width: 250, height: 250 } };
+      html5QrScanner.start(
+        { facingMode: "environment" },
+        config,
+        onQrCodeSuccess,
+        onQrCodeError
+      ).catch(err => {
+        showToast('يرجى السماح للتطبيق باستخدام الكاميرا', true);
+        closeCameraScanner();
+      });
+    }
+
+    function onQrCodeSuccess(decodedText, decodedResult) {
+      closeCameraScanner();
+      
+      let foundCode = null;
+      if (decodedText.startsWith('HZR-')) {
+        foundCode = decodedText.trim();
+      } else if (decodedText.includes('item=')) {
+        foundCode = decodedText.split('item=')[1].split('&')[0].trim();
+      } else if (decodedText.includes('#HZR-')) {
+        foundCode = decodedText.split('#')[1].trim();
+      }
+
+      if (foundCode && itemsById[foundCode]) {
+        showToast(`تم التعرف على الحرز [${foundCode}] بنجاح 🎯`);
+        showDirectItem(foundCode);
+      } else {
+        // Fallback search text
+        document.getElementById('searchInput').value = decodedText;
+        handleSearch();
+      }
+    }
+
+    function onQrCodeError(errorMessage) {
+      // ignore scanning frame noise
+    }
+
+    function closeCameraScanner() {
+      if (html5QrScanner) {
+        html5QrScanner.stop().then(() => {
+          html5QrScanner.clear();
+          document.getElementById('scannerModal').style.display = 'none';
+        }).catch(() => {
+          document.getElementById('scannerModal').style.display = 'none';
+        });
+      } else {
+        document.getElementById('scannerModal').style.display = 'none';
+      }
+    }
+
+    // Direct Single Item Display
+    function showDirectItem(itemId) {
+      const item = itemsById[itemId];
+      if (!item) return;
+
+      document.getElementById('directItemBanner').style.display = 'flex';
+      document.getElementById('searchInput').value = '';
+      document.getElementById('searchSummary').textContent = `عرض الحرز كود [${item.id}] الممسوح ضوئياً`;
+      document.getElementById('btnPrintResults').style.display = 'inline-flex';
+
+      const html = renderSingleCardHtml(item);
+      document.getElementById('searchResults').innerHTML = html;
+    }
+
+    function clearDirectView() {
+      targetItemId = null;
+      document.getElementById('directItemBanner').style.display = 'none';
+      document.getElementById('searchSummary').textContent = 'اكتب كلمة البحث للبدء أو امسح الباركود بالكاميرا';
+      document.getElementById('searchResults').innerHTML = '';
+      document.getElementById('btnPrintResults').style.display = 'none';
+      document.getElementById('searchInput').focus();
+    }
+
+    // Navigation Switch
+    function switchNav(name, btn) {
+      document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('view' + name).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    // Stats
+    function renderStats() {
+      document.getElementById('statFilesCount').textContent = filesData.length;
+      const totalRows = filesData.reduce((sum, f) => sum + (f.total || 0), 0);
+      document.getElementById('statRowsCount').textContent = totalRows;
+    }
+
+    // Files List
+    
+    function openTableModal(index) {
+      const f = filesData[index];
+      document.getElementById('modalTitle').textContent = f.name;
+      const body = document.getElementById('modalBody');
+
+      if (!f.tables || f.tables.length === 0) {
+        body.innerHTML = '<p style="padding:20px; text-align:center;">لا توجد جداول بيانات</p>';
+      } else {
+        body.innerHTML = f.tables.map((t, tidx) => `
+          <div style="margin-bottom: 20px;">
+            <div style="font-weight:bold; font-size:14px; margin-bottom:8px; color:var(--navy-dark);">
+              جدول الأحراز (${t.r ? t.r.length : 0} بند مسجل)
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="styled-table">
+                <thead>
+                  <tr>
+                    <th>كود الباركود</th>
+                    ${(t.h || []).map(h => `<th>${escapeHtml(h)}</th>`).join('')}
+                    <th>إجراء</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${(t.rowsWithId || t.r || []).map(rowObj => {
+                    const uid = rowObj.uid || '';
+                    const cells = rowObj.cells || rowObj;
+                    return `
+                      <tr>
+                        <td><span class="hzr-code-badge">${uid}</span></td>
+                        ${cells.map(cell => `<td>${escapeHtml(cell)}</td>`).join('')}
+                        <td>
+                          <button class="btn-card-action" onclick="openItemQrModal('${uid}')">🏷️ باركود</button>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `).join('');
+      }
+      document.getElementById('tableModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('tableModal').style.display = 'none';
+    }
+
+    function renderFilesList() {
+      const list = document.getElementById('filesContainer');
+      if (filesData.length === 0) {
+        list.innerHTML = '<div style="text-align:center; padding:30px; color:#94a3b8;">لا توجد كشوفات مسجلة</div>';
+        return;
+      }
+      list.innerHTML = filesData.map((f, i) => `
+        <div class="file-item">
+          <div>
+            <div class="file-title">📄 ${escapeHtml(f.name)}</div>
+            <div class="file-sub">عدد البنود: <b>${f.total}</b> حرز مسجل</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-act" style="background:#e0f2fe; color:#0369a1;" onclick="openTableModal(${i})">استعراض 👁️</button>
+            <button class="btn-act" style="background:#fee2e2; color:#b91c1c;" onclick="requestDeleteAuth(${i})">حذف 🗑️</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Search Engine
+    function handleSearch() {
+      clearTimeout(searchTimer);
+      const query = document.getElementById('searchInput').value.trim();
+      const summary = document.getElementById('searchSummary');
+      const container = document.getElementById('searchResults');
+      const btnPrint = document.getElementById('btnPrintResults');
+
+      document.getElementById('directItemBanner').style.display = 'none';
+
+      if (query.length < 2) {
+        summary.textContent = 'اكتب كلمة البحث للبدء أو امسح الباركود بالكاميرا';
+        container.innerHTML = '';
+        btnPrint.style.display = 'none';
+        return;
+      }
+
+      summary.textContent = 'جاري البحث...';
+
+      searchTimer = setTimeout(() => {
+        const normQ = normalizeArabic(query);
+        let matches = [];
+
+        Object.values(itemsById).forEach(item => {
+          const fullText = `${item.id} ${item.case} ${item.store} ${item.desc} ${item.action} ${item.file}`;
+          if (normalizeArabic(fullText).includes(normQ)) {
+            matches.push(item);
+          }
+        });
+
+        summary.textContent = `تم العثور على ${matches.length} حرز مطابق`;
+        btnPrint.style.display = matches.length > 0 ? 'inline-flex' : 'none';
+
+        if (matches.length === 0) {
+          container.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;">لا توجد أحراز مطابقة لكلمة البحث</div>';
+          return;
+        }
+
+        container.innerHTML = matches.map(m => renderSingleCardHtml(m, query)).join('');
+      }, 200);
+    }
+
+    function renderSingleCardHtml(item, query = '') {
+      return `
+        <div class="record-card" id="card-${item.id}">
+          <div class="record-header">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="file-badge">📁 ${escapeHtml(item.file)}</span>
+              <span class="hzr-code-badge">🏷️ ${item.id}</span>
+            </div>
+            <span class="case-badge">قضية: ${highlight(item.case, query)}</span>
+          </div>
+          <div class="record-body">
+            <div class="field-row">
+              <span class="field-title">رقم المخزن:</span>
+              <span class="field-val"><b>${highlight(item.store, query)}</b></span>
+            </div>
+            <div class="field-row">
+              <span class="field-title">وصف الحرز:</span>
+              <div class="field-val desc">${highlight(item.desc, query)}</div>
+            </div>
+            ${item.action ? `
+            <div class="field-row">
+              <span class="field-title">تصرفات النيابة:</span>
+              <span class="field-val" style="color:#047857; font-weight:600;">${highlight(item.action, query)}</span>
+            </div>` : ''}
+          </div>
+          <div class="card-actions">
+            <button class="btn-card-action" style="background:#f0fdf4; color:#15803d; border-color:#bbf7d0;" onclick="downloadCardAsImage('card-${item.id}', '${item.id}')">
+              🖼️ حفظ كصورة للموبايل
+            </button>
+            <button class="btn-card-action" onclick="openItemQrModal('${item.id}')">
+              🏷️ عرض الباركود
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function downloadCardAsImage(elementId, itemId) {
+      const el = document.getElementById(elementId);
+      if (!el) return showToast('تعذر التقاط بطاقة الحرز', true);
+      showToast('جاري استخراج صورة البيانات...');
+      
+      const actions = el.querySelector('.card-actions');
+      if (actions) actions.style.display = 'none';
+
+      html2canvas(el, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
+        if (actions) actions.style.display = 'flex';
+        const link = document.createElement('a');
+        link.download = `بيانات_حرز_${itemId}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showToast('تم حفظ صورة البيانات بنجاح 🖼️');
+      }).catch(() => {
+        if (actions) actions.style.display = 'flex';
+        showToast('خطأ في توليد الصورة', true);
+      });
+    }
+
+    function openItemQrModal(itemId) {
+      const item = itemsById[itemId];
+      if (!item) return showToast('بيانات الحرز غير متوفرة', true);
+
+      document.getElementById('modalTagCase').textContent = `قضية: ${item.case}`;
+      document.getElementById('modalTagStore').textContent = `رقم المخزن: ${item.store} | ${item.file}`;
+      document.getElementById('modalTagCode').textContent = item.id;
+
+      const baseUrl = window.location.origin + window.location.pathname;
+      const itemUrl = `${baseUrl}?item=${item.id}`;
+
+      const qrContainer = document.getElementById('modalTagQr');
+      qrContainer.innerHTML = '';
+      new QRCode(qrContainer, {
+        text: itemUrl,
+        width: 140,
+        height: 140,
+        colorDark: "#0a192f",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+
+      document.getElementById('itemQrModal').style.display = 'flex';
+    }
+
+    function closeItemQrModal() {
+      document.getElementById('itemQrModal').style.display = 'none';
+    }
+
+    function printResults() {
+      const q = document.getElementById('searchInput').value.trim();
+      document.getElementById('printDate').textContent = `تاريخ التقرير: ${new Date().toLocaleDateString('ar-EG')} - استعلام عن: ${q || targetItemId || 'حرز محدد'}`;
+      window.print();
+    }
+
+    function normalizeArabic(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/[أإآٱ]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .replace(/ى/g, 'ي')
+        .replace(/ؤ/g, 'و')
+        .replace(/ئ/g, 'ي')
+        .replace(/[\u064B-\u0652\u0670]/g, '')
+        .toLowerCase()
+        .trim();
+    }
+
+    function highlight(text, q) {
+      if (!text || !q) return escapeHtml(text || '');
+      const regex = new RegExp(`(${escapeRegex(q)})`, 'gi');
+      return escapeHtml(text).replace(regex, '<span class="highlight">$1</span>');
+    }
+
+    function escapeRegex(s) {
+      return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function renderQRCode() {
+      const url = window.location.origin + window.location.pathname;
+      document.getElementById('qrUrlText').textContent = url;
+      const qrContainer = document.getElementById('qrcodeDisplay');
+      qrContainer.innerHTML = '';
+      if (window.QRCode) {
+        new QRCode(qrContainer, {
+          text: url,
+          width: 200,
+          height: 200,
+          colorDark: "#0a192f",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.H
+        });
+      }
+    }
+
+    function copyPageUrl() {
+      navigator.clipboard.writeText(window.location.origin + window.location.pathname).then(() => showToast('تم نسخ الرابط بنجاح'));
+    }
+
+    function saveNewPassword() {
+      const oldP = document.getElementById('cfgOldPass').value;
+      const newP = document.getElementById('cfgNewPass').value;
+      if (oldP !== currentPassword) return showToast('كلمة السر الحالية غير صحيحة', true);
+      if (!newP || newP.length < 4) return showToast('كلمة السر الجديدة يجب أن تكون 4 خانات على الأقل', true);
+
+      currentPassword = newP;
+      localStorage.setItem('system_pass', newP);
+      document.getElementById('cfgOldPass').value = '';
+      document.getElementById('cfgNewPass').value = '';
+      showToast('تم حفظ وتحديث كلمة السر بنجاح');
+    }
+
+    function showToast(msg, isErr = false) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.background = isErr ? '#ef4444' : '#0a192f';
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+  </script>
+</body>
+</html>
